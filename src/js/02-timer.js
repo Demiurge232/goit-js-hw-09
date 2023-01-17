@@ -1,8 +1,12 @@
+// Imports
+import { Notify } from 'notiflix/build/notiflix-notify-aio';
 import flatpickr from 'flatpickr';
 import 'flatpickr/dist/flatpickr.min.css';
 
+// Variables
 let choosenDate = null;
-
+let endDate = null;
+// Object
 const refs = {
   inputEl: document.querySelector('#datetime-picker'),
   startBtn: document.querySelector('[data-start]'),
@@ -10,7 +14,8 @@ const refs = {
   hours: document.querySelector('[data-hours'),
   minutes: document.querySelector('[data-minutes]'),
   seconds: document.querySelector('[data-seconds]'),
-  spanEl: document.querySelector('.value'),
+  fieldDiv: document.querySelectorAll('.field'),
+  timer: document.querySelector('.timer'),
 };
 
 const options = {
@@ -19,38 +24,32 @@ const options = {
   defaultDate: new Date(),
   minuteIncrement: 1,
   onClose(selectedDates) {
-    console.log(selectedDates[0]);
-    choosenDate = selectedDates[0];
-    console.log(choosenDate.getDate());
-    if (selectedDates[0] < options.defaultDate) {
-      window.alert('Please choose a date in the future');
+    if (selectedDates[0] <= options.defaultDate) {
+      Notify.failure('Please choose a date in the future');
       refs.startBtn.disabled = true;
     } else {
+      choosenDate = selectedDates[0];
       refs.startBtn.disabled = false;
+      Notify.success('Thank you, timer accepted date');
     }
   },
 };
 
-// refs.days.textContent = choosenDate.getDay();
-
-const DELAY = 1000;
-
+// Styles
 refs.startBtn.disabled = true;
 
-flatpickr(refs.inputEl, options);
+const styleTimerDiv = () => {
+  refs.timer.style.display = 'flex';
+  refs.timer.style.gap = 10 + 'px';
 
-function onClickStartBtn() {
-  setInterval(() => {
-    const endDate = choosenDate - options.defaultDate;
-    const afterConvert = convertMs(endDate);
-    refs.days.textContent = options.defaultDate.getDay();
-    refs.hours.textContent = options.defaultDate.getHours();
-    refs.minutes.textContent = options.defaultDate.getMinutes();
-    refs.seconds.textContent = options.defaultDate.getSeconds();
-  }, DELAY);
-}
+  refs.fieldDiv.forEach(element => {
+    element.style.display = 'flex';
+    element.style.flexDirection = 'column';
+    element.style.alignItems = 'center';
+  });
+};
 
-refs.startBtn.addEventListener('click', onClickStartBtn);
+//  functions
 function convertMs(ms) {
   // Number of milliseconds per unit of time
   const second = 1000;
@@ -69,3 +68,32 @@ function convertMs(ms) {
 
   return { days, hours, minutes, seconds };
 }
+
+function addLeadingZero(value) {
+  const { days, hours, minutes, seconds } = value;
+  refs.days.textContent = `${days.toString().padStart(2, '0')}`;
+  refs.hours.textContent = `${hours.toString().padStart(2, '0')}`;
+  refs.minutes.textContent = `${minutes.toString().padStart(2, '0')}`;
+  refs.seconds.textContent = `${seconds.toString().padStart(2, '0')}`;
+}
+
+function onClickStartBtn() {
+  refs.startBtn.disabled = true;
+  refs.inputEl.disabled = true;
+  const intervalId = setInterval(() => {
+    const currentDate = Date.now();
+    endDate = choosenDate - currentDate;
+    const leftTime = convertMs(endDate);
+    addLeadingZero(leftTime);
+
+    if (endDate <= 1000) {
+      clearInterval(intervalId);
+      refs.inputEl.disabled = false;
+    }
+  }, 1000);
+}
+
+// return
+styleTimerDiv();
+flatpickr(refs.inputEl, options);
+refs.startBtn.addEventListener('click', onClickStartBtn);
